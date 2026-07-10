@@ -1,0 +1,17 @@
+{
+  "app": {
+    "port": 3000,
+    "basePath": "/movies_series",
+    "defaultUsers": ["Xavi", "Judit"]
+  },
+  "database": {
+    "provider": "sqlite",
+    "path": "C:/Users/xavid/Documents/Casa - Judit y Xavi/BBDD/movies_serie.db",
+    "url": ""
+  },
+  "tmdb": {
+    "language": "es-ES",
+    "includeAdult": false,
+    "region": "ES"
+  }
+}

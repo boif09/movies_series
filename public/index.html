@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Películas y series | Judit & Xavi</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Biblioteca privada</p>
+        <h1>Películas y series</h1>
+        <p class="subtitle">Buscad en TMDB, guardad pendientes y marcad lo visto con valoración y comentario.</p>
+      </div>
+      <div class="stats" id="stats">
+        <div><strong>0</strong><span>vistas</span></div>
+        <div><strong>0</strong><span>pendientes</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel search-panel">
+        <div class="section-title">
+          <div>
+            <h2>Buscar</h2>
+            <p>Películas o series</p>
+          </div>
+        </div>
+
+        <form id="searchForm" class="search-form">
+          <input id="searchInput" type="search" placeholder="Ej: The Last of Us, Interstellar, Dark..." autocomplete="off" />
+          <button type="submit">Buscar</button>
+        </form>
+
+        <div id="searchMessage" class="message"></div>
+        <div id="searchResults" class="grid results-grid"></div>
+      </section>
+
+      <section class="panel library-panel">
+        <div class="section-title library-title">
+          <div>
+            <h2>Vuestra lista</h2>
+            <p>Todo lo guardado en SQLite</p>
+          </div>
+          <div class="filters">
+            <select id="statusFilter" aria-label="Filtrar por estado">
+              <option value="all">Todo</option>
+              <option value="watchlist">Pendientes</option>
+              <option value="watched">Vistas</option>
+            </select>
+            <select id="mediaTypeFilter" aria-label="Filtrar por tipo">
+              <option value="all">Películas y series</option>
+              <option value="movie">Solo películas</option>
+              <option value="tv">Solo series</option>
+            </select>
+            <select id="userFilter" aria-label="Filtrar por usuario">
+              <option value="">Todos</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="libraryMessage" class="message"></div>
+        <div id="library" class="grid library-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="saveDialog" class="dialog">
+    <form method="dialog" id="saveForm" class="dialog-card">
+      <button type="button" class="icon-button close-button" id="closeDialog" aria-label="Cerrar">×</button>
+      <div class="dialog-media">
+        <img id="dialogPoster" alt="" />
+        <div>
+          <p id="dialogType" class="pill"></p>
+          <h3 id="dialogTitle"></h3>
+          <p id="dialogMeta" class="meta"></p>
+          <p id="dialogOverview" class="overview"></p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Estado
+          <select id="saveStatus" required>
+            <option value="watchlist">Pendiente</option>
+            <option value="watched">Vista</option>
+          </select>
+        </label>
+
+        <label id="ratingLabel">
+          Valoración
+          <input id="saveRating" type="number" min="1" max="10" placeholder="1-10" />
+        </label>
+
+        <label id="watchedAtLabel">
+          Fecha vista
+          <input id="saveWatchedAt" type="date" />
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Guardar para</legend>
+        <div id="userCheckboxes" class="checkboxes"></div>
+      </fieldset>
+
+      <label id="watchedTogetherLabel" class="checkbox-row">
+        <input id="watchedTogether" type="checkbox" />
+        Vista juntos
+      </label>
+
+      <label>
+        Comentario
+        <textarea id="saveComment" rows="4" placeholder="Qué os pareció, con quién la viste, si repetirías..."></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button type="button" class="secondary" id="cancelSave">Cancelar</button>
+        <button type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

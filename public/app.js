@@ -1,7 +1,8 @@
 const state = {
   users: [],
   selectedResult: null,
-  lastSearch: []
+  lastSearch: [],
+  libraryFilterTimer: null
 };
 
 const els = {
@@ -14,6 +15,7 @@ const els = {
   statusFilter: document.querySelector('#statusFilter'),
   mediaTypeFilter: document.querySelector('#mediaTypeFilter'),
   userFilter: document.querySelector('#userFilter'),
+  libraryTextFilter: document.querySelector('#libraryTextFilter'),
   stats: document.querySelector('#stats'),
   saveDialog: document.querySelector('#saveDialog'),
   saveForm: document.querySelector('#saveForm'),
@@ -219,6 +221,7 @@ async function loadLibrary() {
   params.set('status', els.statusFilter.value);
   params.set('mediaType', els.mediaTypeFilter.value);
   if (els.userFilter.value) params.set('userId', els.userFilter.value);
+  if (els.libraryTextFilter.value.trim()) params.set('q', els.libraryTextFilter.value.trim());
 
   const rows = await api(`api/library?${params.toString()}`);
 
@@ -333,6 +336,13 @@ async function deleteSharedEntry(watchEventId) {
   await loadLibrary();
 }
 
+function scheduleLibraryFilter() {
+  clearTimeout(state.libraryFilterTimer);
+  state.libraryFilterTimer = setTimeout(() => {
+    loadLibrary().catch((error) => setMessage(els.libraryMessage, error.message, 'error'));
+  }, 180);
+}
+
 function bindEvents() {
   els.searchForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -374,6 +384,8 @@ function bindEvents() {
   for (const filter of [els.statusFilter, els.mediaTypeFilter, els.userFilter]) {
     filter.addEventListener('change', () => loadLibrary().catch((error) => setMessage(els.libraryMessage, error.message, 'error')));
   }
+
+  els.libraryTextFilter.addEventListener('input', scheduleLibraryFilter);
 
   els.library.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-action]');

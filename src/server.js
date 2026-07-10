@@ -142,6 +142,7 @@ router.get('/api/library', (req, res, next) => {
     const status = req.query.status ? String(req.query.status) : null;
     const userId = req.query.userId ? Number(req.query.userId) : null;
     const mediaType = req.query.mediaType ? String(req.query.mediaType) : null;
+    const textFilter = req.query.q ? String(req.query.q).trim() : '';
 
     const where = [];
     const params = [];
@@ -165,6 +166,11 @@ router.get('/api/library', (req, res, next) => {
       }
       where.push('m.media_type = ?');
       params.push(mediaType);
+    }
+
+    if (textFilter) {
+      where.push('(m.title LIKE ? COLLATE NOCASE OR m.original_title LIKE ? COLLATE NOCASE)');
+      params.push(`%${textFilter}%`, `%${textFilter}%`);
     }
 
     const sql = `

@@ -46,14 +46,6 @@ function verdictOrNull(value) {
   return value;
 }
 
-function validateRating(rating) {
-  if (rating === null || !Number.isInteger(rating) || rating < 1 || rating > 10) {
-    const error = new Error('Para marcar como vista debes añadir una valoración del 1 al 10');
-    error.status = 400;
-    throw error;
-  }
-}
-
 function getUsersByIds(userIds) {
   if (!Array.isArray(userIds) || userIds.length === 0) {
     const error = new Error('Debes seleccionar al menos un usuario');
@@ -222,7 +214,6 @@ router.get('/api/library', (req, res, next) => {
       SELECT
         um.id AS user_media_id,
         um.status,
-        um.rating,
         um.comment,
         um.verdict,
         um.watched_at,
@@ -310,8 +301,6 @@ router.post('/api/library', async (req, res, next) => {
       throw error;
     }
 
-    const rating = intOrNull(req.body.rating);
-    if (status === 'watched') validateRating(rating);
     const verdict = status === 'watched' ? verdictOrNull(req.body.verdict) : null;
 
     const comment = req.body.comment ? String(req.body.comment).trim() : null;
@@ -357,11 +346,10 @@ router.post('/api/library', async (req, res, next) => {
       VALUES (?, ?)
     `);
     const upsertUserMedia = db.prepare(`
-      INSERT INTO user_media (user_id, media_id, status, rating, comment, verdict, watched_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO user_media (user_id, media_id, status, comment, verdict, watched_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, media_id) DO UPDATE SET
         status = excluded.status,
-        rating = excluded.rating,
         comment = excluded.comment,
         verdict = excluded.verdict,
         watched_at = excluded.watched_at,
@@ -392,7 +380,7 @@ router.post('/api/library', async (req, res, next) => {
       const media = selectMedia.get(details.tmdb_id, details.media_type);
 
       for (const userId of cleanUserIds) {
-        upsertUserMedia.run(Number(userId), media.id, status, rating, comment, verdict, watchedAt, now());
+        upsertUserMedia.run(Number(userId), media.id, status, comment, verdict, watchedAt, now());
       }
 
       if (watchedTogether) {
@@ -444,11 +432,9 @@ router.patch('/api/watch-events/:watchEventId', (req, res, next) => {
     if (status === 'watched') {
       const current = db.prepare('SELECT watched_at, general_comment FROM watch_events WHERE id = ?').get(watchEventId);
       const sample = db.prepare(`
-        SELECT rating, verdict FROM user_media WHERE media_id = ? AND user_id IN (${placeholders}) LIMIT 1
+        SELECT verdict FROM user_media WHERE media_id = ? AND user_id IN (${placeholders}) LIMIT 1
       `).get(event.media_id, ...event.userIds) || {};
 
-      const rating = req.body.rating === undefined ? sample.rating : intOrNull(req.body.rating);
-      validateRating(rating);
       const verdict = req.body.verdict === undefined ? (sample.verdict ?? null) : verdictOrNull(req.body.verdict);
       const comment = req.body.comment === undefined
         ? current.general_comment
@@ -460,9 +446,9 @@ router.patch('/api/watch-events/:watchEventId', (req, res, next) => {
           .run(watchedAt, comment, watchEventId);
         db.prepare(`
           UPDATE user_media
-          SET status = 'watched', rating = ?, comment = ?, verdict = ?, watched_at = ?, updated_at = ?
+          SET status = 'watched', comment = ?, verdict = ?, watched_at = ?, updated_at = ?
           WHERE media_id = ? AND user_id IN (${placeholders})
-        `).run(rating, comment, verdict, watchedAt, now(), event.media_id, ...event.userIds);
+        `).run(comment, verdict, watchedAt, now(), event.media_id, ...event.userIds);
       });
 
       tx();
@@ -473,7 +459,7 @@ router.patch('/api/watch-events/:watchEventId', (req, res, next) => {
       if (event.userIds.length) {
         db.prepare(`
           UPDATE user_media
-          SET status = 'watchlist', rating = NULL, comment = NULL, verdict = NULL, watched_at = NULL, updated_at = ?
+          SET status = 'watchlist', comment = NULL, verdict = NULL, watched_at = NULL, updated_at = ?
           WHERE media_id = ? AND user_id IN (${placeholders})
         `).run(now(), event.media_id, ...event.userIds);
       }
@@ -530,9 +516,6 @@ router.patch('/api/library/:userMediaId', (req, res, next) => {
     const status = req.body.status || existing.status;
     validateStatus(status);
 
-    const rating = req.body.rating === undefined ? existing.rating : intOrNull(req.body.rating);
-    if (status === 'watched') validateRating(rating);
-
     const verdict = req.body.verdict === undefined ? existing.verdict : verdictOrNull(req.body.verdict);
     const comment = req.body.comment === undefined ? existing.comment : String(req.body.comment || '').trim() || null;
     const watchedAt = status === 'watched'
@@ -541,11 +524,10 @@ router.patch('/api/library/:userMediaId', (req, res, next) => {
 
     db.prepare(`
       UPDATE user_media
-      SET status = ?, rating = ?, comment = ?, verdict = ?, watched_at = ?, updated_at = ?
+      SET status = ?, comment = ?, verdict = ?, watched_at = ?, updated_at = ?
       WHERE id = ?
     `).run(
       status,
-      status === 'watched' ? rating : null,
       comment,
       status === 'watched' ? verdict : null,
       watchedAt,

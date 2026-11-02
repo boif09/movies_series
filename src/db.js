@@ -57,6 +57,27 @@ function ensureColumn(tableName, columnName, definition) {
   }
 }
 
+// La nota del 1 al 10 se sustituyó por la categoría. Antes de borrar la columna, lo que aún
+// no tiene categoría la recibe según su nota (sin tocar las categorías ya puestas).
+function dropRating() {
+  const columns = db.prepare('PRAGMA table_info(user_media)').all();
+  if (!columns.some((column) => column.name === 'rating')) return;
+
+  runTransaction(() => {
+    db.exec(`
+      UPDATE user_media
+      SET verdict = CASE
+        WHEN rating >= 9 THEN 'masterpiece'
+        WHEN rating >= 7 THEN 'recommend'
+        WHEN rating >= 5 THEN 'meh'
+        ELSE 'crap'
+      END
+      WHERE verdict IS NULL AND rating IS NOT NULL AND status = 'watched'
+    `);
+    db.exec('ALTER TABLE user_media DROP COLUMN rating');
+  })();
+}
+
 function migrate() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -91,7 +112,6 @@ function migrate() {
       user_id INTEGER NOT NULL,
       media_id INTEGER NOT NULL,
       status TEXT NOT NULL CHECK (status IN ('watchlist', 'watched')),
-      rating INTEGER CHECK (rating IS NULL OR (rating >= 1 AND rating <= 10)),
       comment TEXT,
       watched_at TEXT,
       added_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -130,6 +150,7 @@ function migrate() {
   ensureColumn('media', 'number_of_seasons', 'INTEGER');
   ensureColumn('media', 'number_of_episodes', 'INTEGER');
   ensureColumn('user_media', 'verdict', 'TEXT');
+  dropRating();
 
   const insertUser = db.prepare('INSERT OR IGNORE INTO users (name) VALUES (?)');
   for (const userName of config.defaultUsers) {

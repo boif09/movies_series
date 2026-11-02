@@ -341,16 +341,26 @@ textarea:focus {
   background: rgba(0,0,0,0.72);
 }
 
-.rating-badge {
+.verdict-icon {
   position: absolute;
   right: 0.65rem;
   top: 0.65rem;
-  padding: 0.35rem 0.55rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
   border-radius: 999px;
-  background: rgba(245,196,81,0.96);
-  color: #17130a;
-  font-weight: 900;
+  border: 1px solid var(--border);
+  font-size: 1.3rem;
+  line-height: 1;
+  backdrop-filter: blur(6px);
 }
+
+/* Sobre la portada los colores de categoría necesitan fondo opaco para leerse. */
+.verdict-icon.verdict-masterpiece { background: rgba(245,196,81,0.96); }
+.verdict-icon.verdict-recommend { background: rgba(145,242,179,0.92); }
+.verdict-icon.verdict-meh { background: rgba(30,36,52,0.9); }
+.verdict-icon.verdict-crap { background: rgba(255,112,112,0.92); }
 
 .library-body {
   padding: 0.85rem;
@@ -455,7 +465,7 @@ textarea:focus {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 

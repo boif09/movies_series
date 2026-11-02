@@ -30,11 +30,9 @@ const els = {
   dialogMeta: document.querySelector('#dialogMeta'),
   dialogOverview: document.querySelector('#dialogOverview'),
   saveStatus: document.querySelector('#saveStatus'),
-  saveRating: document.querySelector('#saveRating'),
   saveWatchedAt: document.querySelector('#saveWatchedAt'),
   watchedTogether: document.querySelector('#watchedTogether'),
   saveComment: document.querySelector('#saveComment'),
-  ratingLabel: document.querySelector('#ratingLabel'),
   watchedAtLabel: document.querySelector('#watchedAtLabel'),
   watchedTogetherLabel: document.querySelector('#watchedTogetherLabel'),
   userCheckboxes: document.querySelector('#userCheckboxes'),
@@ -62,6 +60,12 @@ function verdictBadge(verdict) {
   const info = VERDICTS[verdict];
   if (!info) return '';
   return `<span class="verdict-badge verdict-${verdict}">${info.icon} ${info.label}</span>`;
+}
+
+function verdictIcon(verdict) {
+  const info = VERDICTS[verdict];
+  if (!info) return '';
+  return `<span class="verdict-icon verdict-${verdict}" title="${info.label}" aria-label="${info.label}">${info.icon}</span>`;
 }
 
 function selectedVerdict() {
@@ -208,7 +212,6 @@ function openEditDialog(row, status = row.status) {
     : `Registro de ${row.user_name}.`;
 
   els.saveStatus.value = status;
-  els.saveRating.value = row.rating ?? '';
   els.saveWatchedAt.value = row.watched_at ? String(row.watched_at).slice(0, 10) : '';
   els.saveComment.value = row.comment || '';
   setSelectedVerdict(row.verdict);
@@ -221,15 +224,12 @@ function toggleWatchedFields() {
   const isWatched = els.saveStatus.value === 'watched';
   const selectedUsers = els.userCheckboxes.querySelectorAll('input[name="userIds"]:checked').length;
   const canWatchTogether = isWatched && selectedUsers > 1 && !state.editing;
-  els.ratingLabel.style.display = isWatched ? 'grid' : 'none';
   els.watchedAtLabel.style.display = isWatched ? 'grid' : 'none';
   els.verdictField.style.display = isWatched ? 'grid' : 'none';
   els.watchedTogetherLabel.style.display = canWatchTogether ? 'flex' : 'none';
-  els.saveRating.required = isWatched;
   els.saveWatchedAt.required = isWatched;
 
   if (!isWatched) {
-    els.saveRating.value = '';
     els.saveWatchedAt.value = '';
     els.watchedTogether.checked = false;
     setSelectedVerdict('');
@@ -259,7 +259,6 @@ async function saveSelectedMedia() {
     media_type: item.media_type,
     status: els.saveStatus.value,
     userIds,
-    rating: els.saveStatus.value === 'watched' ? Number(els.saveRating.value) : null,
     watched_at: els.saveStatus.value === 'watched' ? els.saveWatchedAt.value : null,
     watchedTogether: els.saveStatus.value === 'watched' && els.watchedTogether.checked,
     verdict: els.saveStatus.value === 'watched' ? selectedVerdict() || null : null,
@@ -292,7 +291,6 @@ async function saveEditedEntry() {
 
   const payload = {
     status,
-    rating: Number(els.saveRating.value),
     watched_at: els.saveWatchedAt.value,
     verdict: selectedVerdict() || null,
     comment: els.saveComment.value.trim()
@@ -345,7 +343,7 @@ function renderLibraryCard(row, index) {
       <div class="poster-wrap">
         ${posterHtml(row)}
         <span class="pill status-badge">${isShared ? 'Vista juntos' : statusLabel(row.status)}</span>
-        ${isWatched && row.rating ? `<span class="rating-badge">${row.rating}/10</span>` : ''}
+        ${isWatched ? verdictIcon(row.verdict) : ''}
       </div>
       <div class="library-body">
         <span class="pill">${mediaTypeLabel(row.media_type)}</span>

@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS user_media (
   user_id INTEGER NOT NULL,
   media_id INTEGER NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('watchlist', 'watched')),
-  rating INTEGER CHECK (rating IS NULL OR (rating >= 1 AND rating <= 10)),
   comment TEXT,
   verdict TEXT,
   watched_at TEXT,

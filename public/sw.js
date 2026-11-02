@@ -15,12 +15,16 @@ const SHELL = [
 const scopeUrl = new URL(self.registration.scope);
 const inScope = (url) => url.origin === scopeUrl.origin && url.pathname.startsWith(scopeUrl.pathname);
 const relative = (url) => url.pathname.slice(scopeUrl.pathname.length);
-const cacheable = (response) => response && response.ok && response.type === 'basic';
+// Nunca se guardan redirecciones (el login de Authelia) ni errores.
+const cacheable = (response) => response && response.ok && response.type === 'basic' && !response.redirected;
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(SHELL).catch(() => {});
+    await Promise.all(SHELL.map(async (path) => {
+      const response = await fetch(path, { credentials: 'same-origin' }).catch(() => null);
+      if (cacheable(response)) await cache.put(path, response);
+    }));
     await self.skipWaiting();
   })());
 });

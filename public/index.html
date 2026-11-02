@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b1020" />
   <title>Películas y series | Judit & Xavi</title>
-  <link rel="manifest" href="manifest.webmanifest" />
+  <!-- use-credentials: detrás de Authelia, el manifest necesita la cookie de sesión -->
+  <link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials" />
   <link rel="icon" href="icons/icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />

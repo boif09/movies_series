@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
   <title>Películas y series | Judit & Xavi</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -50,6 +54,13 @@
               <option value="all">Todo</option>
               <option value="watchlist">Pendientes</option>
               <option value="watched">Vistas</option>
+            </select>
+            <select id="verdictFilter" aria-label="Filtrar por categoría">
+              <option value="all">Cualquier categoría</option>
+              <option value="recommend">La recomendaría</option>
+              <option value="meh">Meh</option>
+              <option value="crap">Mierdón</option>
+              <option value="none">Vistas sin categoría</option>
             </select>
             <select id="mediaTypeFilter" aria-label="Filtrar por tipo">
               <option value="all">Películas y series</option>
@@ -101,7 +112,17 @@
         </label>
       </div>
 
-      <fieldset>
+      <fieldset id="verdictField" class="verdict-field">
+        <legend>¿Qué os pareció?</legend>
+        <div class="verdict-options">
+          <label><input type="radio" name="verdict" value="recommend" /><span>👍 La recomendaría</span></label>
+          <label><input type="radio" name="verdict" value="meh" /><span>😐 Meh</span></label>
+          <label><input type="radio" name="verdict" value="crap" /><span>💩 Mierdón</span></label>
+          <label><input type="radio" name="verdict" value="" checked /><span>Sin categoría</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset id="usersField">
         <legend>Guardar para</legend>
         <div id="userCheckboxes" class="checkboxes"></div>
       </fieldset>
@@ -115,6 +136,8 @@
         Comentario
         <textarea id="saveComment" rows="4" placeholder="Qué os pareció, con quién la viste, si repetirías..."></textarea>
       </label>
+
+      <p id="editHint" class="meta edit-hint"></p>
 
       <div class="dialog-actions">
         <button type="button" class="secondary" id="cancelSave">Cancelar</button>

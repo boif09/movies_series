@@ -1,7 +1,9 @@
 const state = {
   users: [],
   selectedResult: null,
+  editing: null,
   lastSearch: [],
+  libraryRows: [],
   libraryFilterTimer: null
 };
 
@@ -15,6 +17,7 @@ const els = {
   statusFilter: document.querySelector('#statusFilter'),
   mediaTypeFilter: document.querySelector('#mediaTypeFilter'),
   userFilter: document.querySelector('#userFilter'),
+  verdictFilter: document.querySelector('#verdictFilter'),
   libraryTextFilter: document.querySelector('#libraryTextFilter'),
   stats: document.querySelector('#stats'),
   saveDialog: document.querySelector('#saveDialog'),
@@ -34,7 +37,16 @@ const els = {
   ratingLabel: document.querySelector('#ratingLabel'),
   watchedAtLabel: document.querySelector('#watchedAtLabel'),
   watchedTogetherLabel: document.querySelector('#watchedTogetherLabel'),
-  userCheckboxes: document.querySelector('#userCheckboxes')
+  userCheckboxes: document.querySelector('#userCheckboxes'),
+  usersField: document.querySelector('#usersField'),
+  verdictField: document.querySelector('#verdictField'),
+  editHint: document.querySelector('#editHint')
+};
+
+const VERDICTS = {
+  recommend: { label: 'La recomendaría', icon: '👍' },
+  meh: { label: 'Meh', icon: '😐' },
+  crap: { label: 'Mierdón', icon: '💩' }
 };
 
 function mediaTypeLabel(type) {
@@ -43,6 +55,22 @@ function mediaTypeLabel(type) {
 
 function statusLabel(status) {
   return status === 'watched' ? 'Vista' : 'Pendiente';
+}
+
+function verdictBadge(verdict) {
+  const info = VERDICTS[verdict];
+  if (!info) return '';
+  return `<span class="verdict-badge verdict-${verdict}">${info.icon} ${info.label}</span>`;
+}
+
+function selectedVerdict() {
+  return els.saveForm.querySelector('input[name="verdict"]:checked')?.value || '';
+}
+
+function setSelectedVerdict(value) {
+  for (const radio of els.saveForm.querySelectorAll('input[name="verdict"]')) {
+    radio.checked = radio.value === (value || '');
+  }
 }
 
 function yearFromDate(value) {
@@ -136,10 +164,7 @@ async function searchMedia(query) {
   `).join('');
 }
 
-function openSaveDialog(item, status = 'watchlist') {
-  state.selectedResult = item;
-  els.saveForm.reset();
-
+function fillDialogMedia(item) {
   els.dialogPoster.src = item.poster_url || '';
   els.dialogPoster.alt = item.title || '';
   els.dialogPoster.style.display = item.poster_url ? 'block' : 'none';
@@ -147,6 +172,15 @@ function openSaveDialog(item, status = 'watchlist') {
   els.dialogTitle.textContent = item.title;
   els.dialogMeta.textContent = `${yearFromDate(item.release_date)} · TMDB ${Number(item.tmdb_vote_average || 0).toFixed(1)}`;
   els.dialogOverview.textContent = item.overview || 'Sin descripción disponible.';
+}
+
+function openSaveDialog(item, status = 'watchlist') {
+  state.selectedResult = item;
+  state.editing = null;
+  els.saveForm.reset();
+  fillDialogMedia(item);
+  els.usersField.style.display = '';
+  els.editHint.textContent = '';
 
   els.saveStatus.value = status;
   els.saveWatchedAt.value = new Date().toISOString().slice(0, 10);
@@ -159,12 +193,36 @@ function openSaveDialog(item, status = 'watchlist') {
   els.saveDialog.showModal();
 }
 
+// Abre el mismo diálogo para editar algo ya guardado (individual o visto juntos).
+function openEditDialog(row, status = row.status) {
+  state.selectedResult = null;
+  state.editing = row;
+  els.saveForm.reset();
+  fillDialogMedia(row);
+
+  const isShared = row.entry_type === 'shared';
+  els.usersField.style.display = 'none';
+  els.editHint.textContent = isShared
+    ? `Visto juntos: los cambios se aplican a ${row.user_name}.`
+    : `Registro de ${row.user_name}.`;
+
+  els.saveStatus.value = status;
+  els.saveRating.value = row.rating ?? '';
+  els.saveWatchedAt.value = row.watched_at ? String(row.watched_at).slice(0, 10) : '';
+  els.saveComment.value = row.comment || '';
+  setSelectedVerdict(row.verdict);
+
+  toggleWatchedFields();
+  els.saveDialog.showModal();
+}
+
 function toggleWatchedFields() {
   const isWatched = els.saveStatus.value === 'watched';
   const selectedUsers = els.userCheckboxes.querySelectorAll('input[name="userIds"]:checked').length;
-  const canWatchTogether = isWatched && selectedUsers > 1;
+  const canWatchTogether = isWatched && selectedUsers > 1 && !state.editing;
   els.ratingLabel.style.display = isWatched ? 'grid' : 'none';
   els.watchedAtLabel.style.display = isWatched ? 'grid' : 'none';
+  els.verdictField.style.display = isWatched ? 'grid' : 'none';
   els.watchedTogetherLabel.style.display = canWatchTogether ? 'flex' : 'none';
   els.saveRating.required = isWatched;
   els.saveWatchedAt.required = isWatched;
@@ -173,6 +231,7 @@ function toggleWatchedFields() {
     els.saveRating.value = '';
     els.saveWatchedAt.value = '';
     els.watchedTogether.checked = false;
+    setSelectedVerdict('');
   } else if (!els.saveWatchedAt.value) {
     els.saveWatchedAt.value = new Date().toISOString().slice(0, 10);
   }
@@ -202,6 +261,7 @@ async function saveSelectedMedia() {
     rating: els.saveStatus.value === 'watched' ? Number(els.saveRating.value) : null,
     watched_at: els.saveStatus.value === 'watched' ? els.saveWatchedAt.value : null,
     watchedTogether: els.saveStatus.value === 'watched' && els.watchedTogether.checked,
+    verdict: els.saveStatus.value === 'watched' ? selectedVerdict() || null : null,
     comment: els.saveComment.value.trim()
   };
 
@@ -214,6 +274,36 @@ async function saveSelectedMedia() {
   await loadLibrary();
 }
 
+async function saveEditedEntry() {
+  const row = state.editing;
+  if (!row) return;
+
+  const status = els.saveStatus.value;
+  const isShared = row.entry_type === 'shared';
+
+  if (status === 'watchlist') {
+    if (isShared && !confirm('Se borrará el visionado compartido y volverá a pendiente para todos. ¿Seguir?')) return;
+    if (isShared) await markSharedWatchlist(row.shared_watch_event_id);
+    else await markWatchlist(row.user_media_id);
+    els.saveDialog.close();
+    return;
+  }
+
+  const payload = {
+    status,
+    rating: Number(els.saveRating.value),
+    watched_at: els.saveWatchedAt.value,
+    verdict: selectedVerdict() || null,
+    comment: els.saveComment.value.trim()
+  };
+
+  const path = isShared ? `api/watch-events/${row.shared_watch_event_id}` : `api/library/${row.user_media_id}`;
+  await api(path, { method: 'PATCH', body: JSON.stringify(payload) });
+
+  els.saveDialog.close();
+  await loadLibrary();
+}
+
 async function loadLibrary() {
   setMessage(els.libraryMessage, 'Cargando lista...');
 
@@ -221,9 +311,11 @@ async function loadLibrary() {
   params.set('status', els.statusFilter.value);
   params.set('mediaType', els.mediaTypeFilter.value);
   if (els.userFilter.value) params.set('userId', els.userFilter.value);
+  params.set('verdict', els.verdictFilter.value);
   if (els.libraryTextFilter.value.trim()) params.set('q', els.libraryTextFilter.value.trim());
 
   const rows = await api(`api/library?${params.toString()}`);
+  state.libraryRows = rows;
 
   if (!rows.length) {
     els.library.innerHTML = '';
@@ -233,16 +325,16 @@ async function loadLibrary() {
   }
 
   setMessage(els.libraryMessage, `${rows.length} registros guardados`);
-  els.library.innerHTML = rows.map(renderLibraryCard).join('');
+  els.library.innerHTML = rows.map((row, index) => renderLibraryCard(row, index)).join('');
   await updateStats();
 }
 
-function renderLibraryCard(row) {
+function renderLibraryCard(row, index) {
   const isWatched = row.status === 'watched';
   const isShared = row.entry_type === 'shared';
-  const entryAttrs = isShared
+  const entryAttrs = (isShared
     ? `data-entry-type="shared" data-event-id="${row.shared_watch_event_id}"`
-    : `data-entry-type="user" data-id="${row.user_media_id}"`;
+    : `data-entry-type="user" data-id="${row.user_media_id}"`) + ` data-index="${index}"`;
   const extra = row.media_type === 'movie'
     ? (row.runtime ? `${row.runtime} min` : '')
     : [row.number_of_seasons ? `${row.number_of_seasons} temp.` : '', row.number_of_episodes ? `${row.number_of_episodes} eps.` : ''].filter(Boolean).join(' · ');
@@ -257,10 +349,12 @@ function renderLibraryCard(row) {
       <div class="library-body">
         <span class="pill">${mediaTypeLabel(row.media_type)}</span>
         <h3>${escapeHtml(row.title)}</h3>
+        ${isWatched ? verdictBadge(row.verdict) : ''}
         <p class="meta">${escapeHtml(row.user_name)} · ${yearFromDate(row.release_date)}${extra ? ` · ${escapeHtml(extra)}` : ''}</p>
         ${isWatched && row.watched_at ? `<p class="meta">Vista el ${escapeHtml(row.watched_at)}</p>` : ''}
         ${row.comment ? `<p class="comment clamp-3">${escapeHtml(row.comment)}</p>` : `<p class="overview clamp-3">${escapeHtml(row.overview || '')}</p>`}
         <div class="card-actions">
+          <button type="button" class="secondary" data-action="edit" ${entryAttrs}>Editar</button>
           ${isWatched
             ? `<button type="button" class="secondary" data-action="mark-watchlist" ${entryAttrs}>A pendiente</button>`
             : `<button type="button" data-action="mark-watched" ${entryAttrs}>Vista</button>`
@@ -279,31 +373,6 @@ async function updateStats() {
     <div><strong>${stats.watched}</strong><span>vistas</span></div>
     <div><strong>${stats.watchlist}</strong><span>pendientes</span></div>
   `;
-}
-
-async function quickMarkWatched(userMediaId) {
-  const rating = prompt('Valoración del 1 al 10:');
-  if (!rating) return;
-
-  const parsed = Number(rating);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 10) {
-    alert('La valoración debe ser un número entero del 1 al 10.');
-    return;
-  }
-
-  const comment = prompt('Comentario opcional:') || '';
-
-  await api(`api/library/${userMediaId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      status: 'watched',
-      rating: parsed,
-      comment,
-      watched_at: new Date().toISOString().slice(0, 10)
-    })
-  });
-
-  await loadLibrary();
 }
 
 async function markWatchlist(userMediaId) {
@@ -375,13 +444,14 @@ function bindEvents() {
   els.saveForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     try {
-      await saveSelectedMedia();
+      if (state.editing) await saveEditedEntry();
+      else await saveSelectedMedia();
     } catch (error) {
       alert(error.message);
     }
   });
 
-  for (const filter of [els.statusFilter, els.mediaTypeFilter, els.userFilter]) {
+  for (const filter of [els.statusFilter, els.verdictFilter, els.mediaTypeFilter, els.userFilter]) {
     filter.addEventListener('change', () => loadLibrary().catch((error) => setMessage(els.libraryMessage, error.message, 'error')));
   }
 
@@ -395,8 +465,10 @@ function bindEvents() {
       const id = Number(button.dataset.id);
       const eventId = Number(button.dataset.eventId);
       const isShared = button.dataset.entryType === 'shared';
+      const row = state.libraryRows[Number(button.dataset.index)];
 
-      if (button.dataset.action === 'mark-watched') await quickMarkWatched(id);
+      if (button.dataset.action === 'edit' && row) openEditDialog(row);
+      if (button.dataset.action === 'mark-watched' && row) openEditDialog(row, 'watched');
       if (button.dataset.action === 'mark-watchlist') {
         if (isShared) await markSharedWatchlist(eventId);
         else await markWatchlist(id);
@@ -413,6 +485,9 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
   try {
     await loadUsers();
     await loadLibrary();

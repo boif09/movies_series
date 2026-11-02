@@ -8,7 +8,10 @@ Aplicación web local para buscar películas y series en TMDB y guardar vuestra 
 - Portadas, descripción, año, tipo y nota media de TMDB.
 - Guardar como pendiente o vista.
 - Valoración del 1 al 10 y comentario para contenido visto.
-- Filtros por estado, tipo y usuario.
+- Categoría para lo visto: "La recomendaría", "Meh" o "Mierdón".
+- Editar cualquier registro guardado (estado, nota, fecha, categoría y comentario), también los vistos juntos.
+- Filtros por estado, categoría, tipo y usuario.
+- Instalable como aplicación desde Chrome (PWA).
 - SQLite configurable desde `config.json`.
 - SQLite nativo de Node.js, sin `better-sqlite3` y sin instalar Visual Studio Build Tools.
 
@@ -89,6 +92,16 @@ http://localhost:3000/movies_series
 ```
 
 Si entras en `http://localhost:3000`, la app te redirige automáticamente a `/movies_series`.
+
+## Instalar como aplicación
+
+Con el servidor arrancado, abre la app en Chrome y pulsa el icono de instalar de la barra de direcciones
+(o menú ⋮ → "Enviar, guardar y compartir" → "Instalar página como aplicación").
+
+Chrome solo permite instalar desde `localhost` o desde HTTPS. Para instalarla en el móvil hay que servirla
+por HTTPS (por ejemplo detrás de nginx, como `repartos-app`).
+
+Los iconos se generan con `node scripts/make-icons.js`.
 
 ## Ruta de la aplicación
 

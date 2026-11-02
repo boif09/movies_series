@@ -518,6 +518,73 @@ legend {
   width: auto;
 }
 
+.verdict-options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.verdict-options label {
+  margin: 0;
+  cursor: pointer;
+}
+
+.verdict-options input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.verdict-options span {
+  display: inline-block;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.18);
+  color: var(--text);
+}
+
+.verdict-options input:checked + span {
+  border-color: rgba(245,196,81,0.82);
+  background: rgba(245,196,81,0.18);
+  font-weight: 700;
+}
+
+.verdict-options input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(245,196,81,0.3);
+}
+
+.verdict-badge {
+  width: fit-content;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border: 1px solid var(--border);
+}
+
+.verdict-recommend {
+  background: rgba(145,242,179,0.16);
+  border-color: rgba(145,242,179,0.45);
+  color: var(--ok);
+}
+
+.verdict-meh {
+  background: rgba(174,184,204,0.14);
+  color: var(--muted);
+}
+
+.verdict-crap {
+  background: rgba(255,112,112,0.14);
+  border-color: rgba(255,112,112,0.4);
+  color: #ffb3b3;
+}
+
+.edit-hint:empty {
+  display: none;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

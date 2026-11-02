@@ -129,6 +129,7 @@ function migrate() {
   ensureColumn('media', 'runtime', 'INTEGER');
   ensureColumn('media', 'number_of_seasons', 'INTEGER');
   ensureColumn('media', 'number_of_episodes', 'INTEGER');
+  ensureColumn('user_media', 'verdict', 'TEXT');
 
   const insertUser = db.prepare('INSERT OR IGNORE INTO users (name) VALUES (?)');
   for (const userName of config.defaultUsers) {

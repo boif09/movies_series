@@ -564,6 +564,12 @@ legend {
   border: 1px solid var(--border);
 }
 
+.verdict-masterpiece {
+  background: rgba(245,196,81,0.2);
+  border-color: rgba(245,196,81,0.6);
+  color: var(--accent);
+}
+
 .verdict-recommend {
   background: rgba(145,242,179,0.16);
   border-color: rgba(145,242,179,0.45);

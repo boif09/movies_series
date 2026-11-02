@@ -34,7 +34,7 @@ function validateStatus(status) {
 }
 
 // Qué nos ha parecido algo visto. Solo tiene sentido en contenido marcado como visto.
-const VERDICTS = ['recommend', 'meh', 'crap'];
+const VERDICTS = ['masterpiece', 'recommend', 'meh', 'crap'];
 
 function verdictOrNull(value) {
   if (value === null || value === undefined || value === '') return null;

@@ -44,6 +44,7 @@ const els = {
 };
 
 const VERDICTS = {
+  masterpiece: { label: 'Obra maestra', icon: '🏆' },
   recommend: { label: 'La recomendaría', icon: '👍' },
   meh: { label: 'Meh', icon: '😐' },
   crap: { label: 'Mierdón', icon: '💩' }

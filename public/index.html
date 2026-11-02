@@ -58,6 +58,7 @@
             </select>
             <select id="verdictFilter" aria-label="Filtrar por categoría">
               <option value="all">Cualquier categoría</option>
+              <option value="masterpiece">Obra maestra</option>
               <option value="recommend">La recomendaría</option>
               <option value="meh">Meh</option>
               <option value="crap">Mierdón</option>
@@ -116,6 +117,7 @@
       <fieldset id="verdictField" class="verdict-field">
         <legend>¿Qué os pareció?</legend>
         <div class="verdict-options">
+          <label><input type="radio" name="verdict" value="masterpiece" /><span>🏆 Obra maestra</span></label>
           <label><input type="radio" name="verdict" value="recommend" /><span>👍 La recomendaría</span></label>
           <label><input type="radio" name="verdict" value="meh" /><span>😐 Meh</span></label>
           <label><input type="radio" name="verdict" value="crap" /><span>💩 Mierdón</span></label>

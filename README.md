@@ -8,7 +8,7 @@ Aplicación web local para buscar películas y series en TMDB y guardar vuestra 
 - Portadas, descripción, año, tipo y nota media de TMDB.
 - Guardar como pendiente o vista.
 - Valoración del 1 al 10 y comentario para contenido visto.
-- Categoría para lo visto: "La recomendaría", "Meh" o "Mierdón".
+- Categoría para lo visto: "Obra maestra", "La recomendaría", "Meh" o "Mierdón".
 - Editar cualquier registro guardado (estado, nota, fecha, categoría y comentario), también los vistos juntos.
 - Filtros por estado, categoría, tipo y usuario.
 - Instalable como aplicación desde Chrome (PWA).

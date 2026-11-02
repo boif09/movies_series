@@ -36,6 +36,11 @@ function validateStatus(status) {
 // Qué nos ha parecido algo visto. Solo tiene sentido en contenido marcado como visto.
 const VERDICTS = ['masterpiece', 'recommend', 'meh', 'crap'];
 
+// "WTF": marca aparte de la categoría para lo que, bueno o malo, es muy raro.
+function wtfFlag(value) {
+  return value === true || value === 1 || value === '1' || value === 'true' ? 1 : 0;
+}
+
 function verdictOrNull(value) {
   if (value === null || value === undefined || value === '') return null;
   if (!VERDICTS.includes(value)) {
@@ -157,6 +162,7 @@ router.get('/api/library', (req, res, next) => {
     const mediaType = req.query.mediaType ? String(req.query.mediaType) : null;
     const textFilter = req.query.q ? String(req.query.q).trim() : '';
     const verdict = req.query.verdict ? String(req.query.verdict) : null;
+    const wtf = req.query.wtf ? String(req.query.wtf) : null;
 
     const where = [];
     const params = [];
@@ -196,6 +202,9 @@ router.get('/api/library', (req, res, next) => {
       }
     }
 
+    if (wtf === 'only') where.push('um.wtf = 1');
+    if (wtf === 'exclude') where.push('um.wtf = 0');
+
     const sql = `
       WITH shared_events AS (
         SELECT
@@ -216,6 +225,7 @@ router.get('/api/library', (req, res, next) => {
         um.status,
         um.comment,
         um.verdict,
+        um.wtf,
         um.watched_at,
         um.added_at,
         um.updated_at AS user_media_updated_at,
@@ -302,6 +312,7 @@ router.post('/api/library', async (req, res, next) => {
     }
 
     const verdict = status === 'watched' ? verdictOrNull(req.body.verdict) : null;
+    const wtf = status === 'watched' ? wtfFlag(req.body.wtf) : 0;
 
     const comment = req.body.comment ? String(req.body.comment).trim() : null;
     const watchedAt = status === 'watched'
@@ -346,12 +357,13 @@ router.post('/api/library', async (req, res, next) => {
       VALUES (?, ?)
     `);
     const upsertUserMedia = db.prepare(`
-      INSERT INTO user_media (user_id, media_id, status, comment, verdict, watched_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO user_media (user_id, media_id, status, comment, verdict, wtf, watched_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, media_id) DO UPDATE SET
         status = excluded.status,
         comment = excluded.comment,
         verdict = excluded.verdict,
+        wtf = excluded.wtf,
         watched_at = excluded.watched_at,
         updated_at = excluded.updated_at
     `);
@@ -380,7 +392,7 @@ router.post('/api/library', async (req, res, next) => {
       const media = selectMedia.get(details.tmdb_id, details.media_type);
 
       for (const userId of cleanUserIds) {
-        upsertUserMedia.run(Number(userId), media.id, status, comment, verdict, watchedAt, now());
+        upsertUserMedia.run(Number(userId), media.id, status, comment, verdict, wtf, watchedAt, now());
       }
 
       if (watchedTogether) {
@@ -432,10 +444,11 @@ router.patch('/api/watch-events/:watchEventId', (req, res, next) => {
     if (status === 'watched') {
       const current = db.prepare('SELECT watched_at, general_comment FROM watch_events WHERE id = ?').get(watchEventId);
       const sample = db.prepare(`
-        SELECT verdict FROM user_media WHERE media_id = ? AND user_id IN (${placeholders}) LIMIT 1
+        SELECT verdict, wtf FROM user_media WHERE media_id = ? AND user_id IN (${placeholders}) LIMIT 1
       `).get(event.media_id, ...event.userIds) || {};
 
       const verdict = req.body.verdict === undefined ? (sample.verdict ?? null) : verdictOrNull(req.body.verdict);
+      const wtf = req.body.wtf === undefined ? (sample.wtf ?? 0) : wtfFlag(req.body.wtf);
       const comment = req.body.comment === undefined
         ? current.general_comment
         : String(req.body.comment || '').trim() || null;
@@ -446,9 +459,9 @@ router.patch('/api/watch-events/:watchEventId', (req, res, next) => {
           .run(watchedAt, comment, watchEventId);
         db.prepare(`
           UPDATE user_media
-          SET status = 'watched', comment = ?, verdict = ?, watched_at = ?, updated_at = ?
+          SET status = 'watched', comment = ?, verdict = ?, wtf = ?, watched_at = ?, updated_at = ?
           WHERE media_id = ? AND user_id IN (${placeholders})
-        `).run(comment, verdict, watchedAt, now(), event.media_id, ...event.userIds);
+        `).run(comment, verdict, wtf, watchedAt, now(), event.media_id, ...event.userIds);
       });
 
       tx();
@@ -459,7 +472,7 @@ router.patch('/api/watch-events/:watchEventId', (req, res, next) => {
       if (event.userIds.length) {
         db.prepare(`
           UPDATE user_media
-          SET status = 'watchlist', comment = NULL, verdict = NULL, watched_at = NULL, updated_at = ?
+          SET status = 'watchlist', comment = NULL, verdict = NULL, wtf = 0, watched_at = NULL, updated_at = ?
           WHERE media_id = ? AND user_id IN (${placeholders})
         `).run(now(), event.media_id, ...event.userIds);
       }
@@ -517,6 +530,7 @@ router.patch('/api/library/:userMediaId', (req, res, next) => {
     validateStatus(status);
 
     const verdict = req.body.verdict === undefined ? existing.verdict : verdictOrNull(req.body.verdict);
+    const wtf = req.body.wtf === undefined ? existing.wtf : wtfFlag(req.body.wtf);
     const comment = req.body.comment === undefined ? existing.comment : String(req.body.comment || '').trim() || null;
     const watchedAt = status === 'watched'
       ? (req.body.watched_at || existing.watched_at || new Date().toISOString().slice(0, 10))
@@ -524,12 +538,13 @@ router.patch('/api/library/:userMediaId', (req, res, next) => {
 
     db.prepare(`
       UPDATE user_media
-      SET status = ?, comment = ?, verdict = ?, watched_at = ?, updated_at = ?
+      SET status = ?, comment = ?, verdict = ?, wtf = ?, watched_at = ?, updated_at = ?
       WHERE id = ?
     `).run(
       status,
       comment,
       status === 'watched' ? verdict : null,
+      status === 'watched' ? wtf : 0,
       watchedAt,
       now(),
       userMediaId

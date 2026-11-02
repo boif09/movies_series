@@ -18,6 +18,7 @@ const els = {
   mediaTypeFilter: document.querySelector('#mediaTypeFilter'),
   userFilter: document.querySelector('#userFilter'),
   verdictFilter: document.querySelector('#verdictFilter'),
+  wtfFilter: document.querySelector('#wtfFilter'),
   libraryTextFilter: document.querySelector('#libraryTextFilter'),
   stats: document.querySelector('#stats'),
   saveDialog: document.querySelector('#saveDialog'),
@@ -38,6 +39,7 @@ const els = {
   userCheckboxes: document.querySelector('#userCheckboxes'),
   usersField: document.querySelector('#usersField'),
   verdictField: document.querySelector('#verdictField'),
+  saveWtf: document.querySelector('#saveWtf'),
   editHint: document.querySelector('#editHint')
 };
 
@@ -67,6 +69,9 @@ function verdictIcon(verdict) {
   if (!info) return '';
   return `<span class="verdict-icon verdict-${verdict}" title="${info.label}" aria-label="${info.label}">${info.icon}</span>`;
 }
+
+const WTF_BADGE = '<span class="verdict-badge wtf-badge">🤯 WTF</span>';
+const WTF_ICON = '<span class="verdict-icon wtf-icon" title="WTF" aria-label="WTF">🤯</span>';
 
 function selectedVerdict() {
   return els.saveForm.querySelector('input[name="verdict"]:checked')?.value || '';
@@ -215,6 +220,7 @@ function openEditDialog(row, status = row.status) {
   els.saveWatchedAt.value = row.watched_at ? String(row.watched_at).slice(0, 10) : '';
   els.saveComment.value = row.comment || '';
   setSelectedVerdict(row.verdict);
+  els.saveWtf.checked = Boolean(row.wtf);
 
   toggleWatchedFields();
   els.saveDialog.showModal();
@@ -233,6 +239,7 @@ function toggleWatchedFields() {
     els.saveWatchedAt.value = '';
     els.watchedTogether.checked = false;
     setSelectedVerdict('');
+    els.saveWtf.checked = false;
   } else if (!els.saveWatchedAt.value) {
     els.saveWatchedAt.value = new Date().toISOString().slice(0, 10);
   }
@@ -262,6 +269,7 @@ async function saveSelectedMedia() {
     watched_at: els.saveStatus.value === 'watched' ? els.saveWatchedAt.value : null,
     watchedTogether: els.saveStatus.value === 'watched' && els.watchedTogether.checked,
     verdict: els.saveStatus.value === 'watched' ? selectedVerdict() || null : null,
+    wtf: els.saveStatus.value === 'watched' && els.saveWtf.checked,
     comment: els.saveComment.value.trim()
   };
 
@@ -293,6 +301,7 @@ async function saveEditedEntry() {
     status,
     watched_at: els.saveWatchedAt.value,
     verdict: selectedVerdict() || null,
+    wtf: els.saveWtf.checked,
     comment: els.saveComment.value.trim()
   };
 
@@ -311,6 +320,7 @@ async function loadLibrary() {
   params.set('mediaType', els.mediaTypeFilter.value);
   if (els.userFilter.value) params.set('userId', els.userFilter.value);
   params.set('verdict', els.verdictFilter.value);
+  params.set('wtf', els.wtfFilter.value);
   if (els.libraryTextFilter.value.trim()) params.set('q', els.libraryTextFilter.value.trim());
 
   const rows = await api(`api/library?${params.toString()}`);
@@ -343,12 +353,15 @@ function renderLibraryCard(row, index) {
       <div class="poster-wrap">
         ${posterHtml(row)}
         <span class="pill status-badge">${isShared ? 'Vista juntos' : statusLabel(row.status)}</span>
-        ${isWatched ? verdictIcon(row.verdict) : ''}
+        <div class="poster-icons">
+          ${isWatched ? verdictIcon(row.verdict) : ''}
+          ${isWatched && row.wtf ? WTF_ICON : ''}
+        </div>
       </div>
       <div class="library-body">
         <span class="pill">${mediaTypeLabel(row.media_type)}</span>
         <h3>${escapeHtml(row.title)}</h3>
-        ${isWatched ? verdictBadge(row.verdict) : ''}
+        ${isWatched && (row.verdict || row.wtf) ? `<div class="badges">${verdictBadge(row.verdict)}${row.wtf ? WTF_BADGE : ''}</div>` : ''}
         <p class="meta">${escapeHtml(row.user_name)} · ${yearFromDate(row.release_date)}${extra ? ` · ${escapeHtml(extra)}` : ''}</p>
         ${isWatched && row.watched_at ? `<p class="meta">Vista el ${escapeHtml(row.watched_at)}</p>` : ''}
         ${row.comment ? `<p class="comment clamp-3">${escapeHtml(row.comment)}</p>` : `<p class="overview clamp-3">${escapeHtml(row.overview || '')}</p>`}
@@ -450,7 +463,7 @@ function bindEvents() {
     }
   });
 
-  for (const filter of [els.statusFilter, els.verdictFilter, els.mediaTypeFilter, els.userFilter]) {
+  for (const filter of [els.statusFilter, els.verdictFilter, els.wtfFilter, els.mediaTypeFilter, els.userFilter]) {
     filter.addEventListener('change', () => loadLibrary().catch((error) => setMessage(els.libraryMessage, error.message, 'error')));
   }
 

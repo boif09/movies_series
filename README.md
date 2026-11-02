@@ -9,6 +9,7 @@ Aplicación web local para buscar películas y series en TMDB y guardar vuestra 
 - Guardar como pendiente o vista.
 - Comentario para contenido visto.
 - Categoría para lo visto: "Obra maestra", "La recomendaría", "Meh" o "Mierdón".
+- Marca "WTF 🤯" para lo que, bueno o malo, es muy raro.
 - Editar cualquier registro guardado (estado, nota, fecha, categoría y comentario), también los vistos juntos.
 - Filtros por estado, categoría, tipo y usuario.
 - Instalable como aplicación desde Chrome (PWA).

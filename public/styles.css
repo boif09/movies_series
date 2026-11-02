@@ -341,10 +341,19 @@ textarea:focus {
   background: rgba(0,0,0,0.72);
 }
 
-.verdict-icon {
+.poster-icons {
   position: absolute;
   right: 0.65rem;
   top: 0.65rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.poster-icons:empty {
+  display: none;
+}
+
+.verdict-icon {
   width: 2.4rem;
   height: 2.4rem;
   display: grid;
@@ -361,6 +370,41 @@ textarea:focus {
 .verdict-icon.verdict-recommend { background: rgba(145,242,179,0.92); }
 .verdict-icon.verdict-meh { background: rgba(30,36,52,0.9); }
 .verdict-icon.verdict-crap { background: rgba(255,112,112,0.92); }
+.verdict-icon.wtf-icon { background: rgba(192,132,252,0.92); }
+
+.badges {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.wtf-badge {
+  background: rgba(192,132,252,0.16);
+  border-color: rgba(192,132,252,0.45);
+  color: #dcc2ff;
+}
+
+.wtf-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid rgba(192,132,252,0.4);
+  border-radius: 999px;
+  background: rgba(192,132,252,0.1);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.wtf-toggle input {
+  width: auto;
+}
+
+.wtf-toggle small {
+  color: var(--muted);
+}
 
 .library-body {
   padding: 0.85rem;

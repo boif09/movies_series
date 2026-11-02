@@ -150,6 +150,7 @@ function migrate() {
   ensureColumn('media', 'number_of_seasons', 'INTEGER');
   ensureColumn('media', 'number_of_episodes', 'INTEGER');
   ensureColumn('user_media', 'verdict', 'TEXT');
+  ensureColumn('user_media', 'wtf', 'INTEGER NOT NULL DEFAULT 0');
   dropRating();
 
   const insertUser = db.prepare('INSERT OR IGNORE INTO users (name) VALUES (?)');

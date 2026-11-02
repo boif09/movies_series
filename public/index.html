@@ -64,6 +64,11 @@
               <option value="crap">Mierdón</option>
               <option value="none">Vistas sin categoría</option>
             </select>
+            <select id="wtfFilter" aria-label="Filtrar por WTF">
+              <option value="all">Con y sin WTF</option>
+              <option value="only">Solo WTF 🤯</option>
+              <option value="exclude">Sin WTF</option>
+            </select>
             <select id="mediaTypeFilter" aria-label="Filtrar por tipo">
               <option value="all">Películas y series</option>
               <option value="movie">Solo películas</option>
@@ -118,6 +123,10 @@
           <label><input type="radio" name="verdict" value="crap" /><span>💩 Mierdón</span></label>
           <label><input type="radio" name="verdict" value="" checked /><span>Sin categoría</span></label>
         </div>
+        <label class="wtf-toggle">
+          <input id="saveWtf" type="checkbox" />
+          <span>🤯 WTF <small>buena o mala, es una peli muy rara</small></span>
+        </label>
       </fieldset>
 
       <fieldset id="usersField">

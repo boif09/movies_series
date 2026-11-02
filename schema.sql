@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS user_media (
   status TEXT NOT NULL CHECK (status IN ('watchlist', 'watched')),
   comment TEXT,
   verdict TEXT,
+  wtf INTEGER NOT NULL DEFAULT 0,
   watched_at TEXT,
   added_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
